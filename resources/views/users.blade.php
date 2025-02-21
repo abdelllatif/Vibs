@@ -28,7 +28,7 @@
                     <a href="#" class="text-gray-600 hover:text-purple-600">
                         <i class="fas fa-bell text-xl"></i>
                     </a>
-                    <img src="/api/placeholder/40/40" alt="Profile" class="w-10 h-10 rounded-full">
+                   <a href="{{ route('profile') }}"><img src="{{ asset('storage/' . ($user->photo_profil ?? 'uploads/user.jpg')) }}" alt="Profile" class="w-10 h-10 rounded-full"></a>
                 </div>
             </div>
         </div>
@@ -55,7 +55,7 @@
             <div class="bg-white rounded-lg shadow-md overflow-hidden">
                 <div class="p-6">
                     <div class="flex items-start space-x-4">
-                        <img src="{{ asset('storage/' . ($user->photo_profil ?? 'uploads/user.jpg')) }}" alt="User  Avatar" class="w-20 h-20 rounded-full">
+                        <img src="{{ asset('storage/' . ($user->photo_profil ?? 'uploads/user.jpg'))  }}" alt="User  Avatar" class="w-20 h-20 rounded-full">
                         <div class="flex-1">
                             <h3 class="font-semibold text-lg">{{ $user->nom . ' ' . $user->prenom }}</h3>
                             <p class="text-gray-600">@ {{ $user->pseudo }}</p>
@@ -64,10 +64,15 @@
                                 Membre depuis: {{ $user->created_at->format('F Y') }}
                             </p>
                         </div>
-                        <button onclick="addFriend({{ $user->id }})" class="bg-purple-600 text-white px-4 py-2 rounded-full hover:bg-purple-700">
-                            <i class="fas fa-user-plus mr-1"></i>
-                            Suivre
+                        @if(auth()->user()->friends()->where('friend_id', $user->id)->exists())
+                        <button class="bg-gray-400 text-white px-4 py-2 rounded-full cursor-default">
+                            <i class="fas fa-user-check mr-1"></i> Ami
                         </button>
+                        @else
+                        <button onclick="addFriend({{ $user->id }})" class="bg-purple-600 text-white px-4 py-2 rounded-full hover:bg-purple-700">
+                            <i class="fas fa-user-plus mr-1"></i> Suivre
+                        </button>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -76,7 +81,7 @@
 
 <!-- Pagination -->
 <div class="mt-8 flex justify-center">
-    {{ $users->onEachSide(1)->links('pagination::tailwind') }} <!-- Use Tailwind CSS pagination -->
+    {{ $users->onEachSide(1)->links('pagination::tailwind') }}
 </div>
 
 

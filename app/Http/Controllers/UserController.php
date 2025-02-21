@@ -19,7 +19,7 @@ class UserController extends Controller
                              ->orWhere('pseudo', 'like', "%{$search}%");
             })
             ->orderBy($sort, 'asc')
-            ->paginate(4);
+            ->paginate(9);
 
         return view('users', compact('users', 'search', 'sort'));
     }
