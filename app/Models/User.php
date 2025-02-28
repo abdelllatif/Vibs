@@ -2,45 +2,24 @@
 
 namespace App\Models;
 
- use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
-    'nom',
-    'prenom',
-    'pseudo',
-    'email',
-    'bio',
-    'password',
+        'nom', 'prenom', 'pseudo', 'email', 'bio', 'password',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
-        'password',
-        'remember_token',
+        'password', 'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -48,15 +27,45 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
         ];
     }
-    // In App\Models\User.php
 
-    public function friends()
+
+    public function sentRequests()
+    {
+        return $this->belongsToMany(User::class, 'friends', 'user_id', 'friend_id')
+                    ->withPivot('status')
+                    ->wherePivot('status', 'pending');
+    }
+
+    public function receivedRequests()
+    {
+        return $this->belongsToMany(User::class, 'friends', 'friend_id', 'user_id')
+                    ->withPivot('status')
+                    ->wherePivot('status', 'pending');
+    }
+
+    public function friendships()
     {
         return $this->hasMany(Friend::class);
     }
+
 
     public function friendOf()
     {
         return $this->hasMany(Friend::class, 'friend_id');
     }
+    /**
+ * Define a relationship for accepted friends
+ */
+public function friends()
+{
+    return $this->belongsToMany(User::class, 'friends', 'user_id', 'friend_id')
+                ->withPivot('status')
+                ->wherePivot('status', 'accepted');
+}
+
+public function posts()
+{
+    return $this->hasMany(Post::class);
+}
+
 }

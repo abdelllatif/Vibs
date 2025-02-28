@@ -52,7 +52,7 @@
         <!-- Users Grid -->
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             @foreach($users as $user)
-            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <a href="{{ route('user.details', ['id' => $user->id]) }}" class="bg-white rounded-lg cursor-pointer shadow-md overflow-hidden">
                 <div class="p-6">
                     <div class="flex items-start space-x-4">
                         <img src="{{ asset('storage/' . ($user->photo_profil ?? 'uploads/user.jpg'))  }}" alt="User  Avatar" class="w-20 h-20 rounded-full">
@@ -68,14 +68,24 @@
                         <button class="bg-gray-400 text-white px-4 py-2 rounded-full cursor-default">
                             <i class="fas fa-user-check mr-1"></i> Ami
                         </button>
-                        @else
-                        <button onclick="addFriend({{ $user->id }})" class="bg-purple-600 text-white px-4 py-2 rounded-full hover:bg-purple-700">
-                            <i class="fas fa-user-plus mr-1"></i> Suivre
+                        @elseif(auth()->user()->sentRequests()->where('friend_id', $user->id)->exists())
+                        <button class="bg-yellow-500 text-white px-4 py-2 rounded-full cursor-default">
+                            <i class="fas fa-clock mr-1"></i> En attente
                         </button>
-                        @endif
+                        @elseif(auth()->user()->receivedRequests()->where('user_id', $user->id)->exists())
+                        <button onclick="acceptRequest({{ $user->id }})" class="bg-green-500 text-white px-4 py-2 rounded-full">
+                            <i class="fas fa-user-check mr-1"></i> Accepter
+                        </button>
+                    @else
+                        <button id="follow-btn-{{ $user->id }}" onclick="sendRequest({{ $user->id }})"
+                            class="mt-3 w-full py-2 rounded-lg text-white bg-purple-600 hover:bg-purple-700">
+                            <i class="fas fa-user-plus"></i> Suivre
+                        </button>
+                    @endif
+
                     </div>
                 </div>
-            </div>
+            </a>
             @endforeach
         </div>
 
@@ -87,30 +97,32 @@
 
  </div>
  <script>
-function addFriend(userId) {
-    fetch(`/friends/add/${userId}`, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Accept': 'application/json'
-        },
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(err => { throw err; });
+       function sendRequest(userId) {
+            let btn = document.getElementById(`follow-btn-${userId}`);
+            btn.innerHTML = "En attente...";
+            btn.disabled = true;
+
+            fetch(`/friends/add/${userId}`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    btn.innerHTML = "Demande envoyée";
+                } else {
+                    btn.innerHTML = "Suivre";
+                    btn.disabled = false;
+                }
+            })
+            .catch(() => {
+                btn.innerHTML = "Suivre";
+                btn.disabled = false;
+            });
         }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert(error.error || 'Operation failed');
-    });
-}
    </script>
 
 </body>

@@ -15,9 +15,12 @@ class Friend extends Model
     {
         return $this->belongsTo(User::class);
     }
-
-    public function friend()
+    public function friends()
     {
-        return $this->belongsTo(User::class, 'friend_id');
+        return $this->belongsToMany(User::class, 'friends', 'user_id', 'friend_id')
+                    ->withPivot('status')
+                    ->wherePivot('status', 'accepted');
     }
+
+
 }

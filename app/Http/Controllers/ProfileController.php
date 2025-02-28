@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\Post;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -10,20 +11,14 @@ use Illuminate\Support\Facades\Redirect;
 
 class ProfileController extends Controller
 {
-    /**
-     * Display the user's profile form.
-     */
     public function show(Request $request)
-    {
-        $user = $request->user()->load(['friends.friend']);
-        $friends = $user->friends()->with('friend')->limit(6)->get();
+{
+    $user = $request->user();
+    $friends = $user->friends()->limit(6)->get();
+    $posts=$this->afficher($request);
+    return view('profile', compact('user', 'friends','posts'));
+}
 
-        return view('profile', compact('user', 'friends'));
-    }
-
-    /**
-     * Update the user's profile information.
-     */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         $user = $request->user();
@@ -78,4 +73,10 @@ class ProfileController extends Controller
         $user->save();
         return redirect()->route('profile')->with('status', 'Profile image updated successfully!');
     }
+     public function afficher(Request $request)
+    {
+        $user=$request->user();
+        return Post::with('user')->where('user_id',$user->id)->latest()->get();
+    }
+
 }

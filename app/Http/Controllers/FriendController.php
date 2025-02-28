@@ -13,38 +13,30 @@ class FriendController extends Controller
         $user = auth()->user();
 
         if (!$user) {
-            return response()->json(['error' => 'Unauthenticated'], 401);
+            return response()->json(['error' => 'Non authentifié'], 401);
         }
 
-        try {
-            $friendUser = User::findOrFail($id);
-
-            if ($user->friends()->where('friend_id', $id)->exists()) {
-                return response()->json(['error' => 'Already friends'], 409);
-            }
-
-            Friend::create([
-                'user_id' => $user->id,
-                'friend_id' => $id
-            ]);
-
-            return response()->json(['success' => 'Friend added']);
-
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Operation failed'], 500);
+        if ($user->friends()->where('friend_id', $id)->exists()) {
+            return response()->json(['error' => 'Déjà en attente'], 409);
         }
+
+        Friend::create([
+            'user_id' => $user->id,
+            'friend_id' => $id
+        ]);
+
+        return response()->json(['success' => true]);
     }
+
 
     public function removeFriend($id)
     {
         $user = auth()->user();
 
-        // Check if the user is authenticated
         if (!$user) {
             return response()->json(['error' => 'User  not authenticated'], 401);
         }
 
-        // Remove the friend relationship
         Friend::where('user_id', $user->id)->where('friend_id', $id)->delete();
         return response()->json(['success' => 'Friend removed successfully.']);
     }
@@ -52,14 +44,43 @@ class FriendController extends Controller
     public function getFriends()
     {
         $user = auth()->user();
-
-        // Check if the user is authenticated
         if (!$user) {
             return response()->json(['error' => 'User  not authenticated'], 401);
         }
-
-        // Get the user's friends
-        $friends = $user->friends()->with('friend')->get(); // Get all friends
+        $friends = $user->friends()->with('friend')->get();
         return response()->json($friends);
+    }
+    public function acceptFriendRequest($id)
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
+
+        $request = $user->receivedRequests()->where('user_id', $id)->first();
+
+        if ($request) {
+            $request->pivot->update(['status' => 'accepted']);
+            $user->friends()->attach($id, ['status' => 'accepted']);
+        }
+
+        return response()->json(['success' => 'Friend request accepted.']);
+    }
+
+    public function rejectFriendRequest($id)
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
+        $request = $user->receivedRequests()->where('user_id', $id)->first();
+
+        if ($request) {
+            $request->delete(); 
+        }
+
+        return response()->json(['success' => 'Friend request rejected.']);
     }
 }

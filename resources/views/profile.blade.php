@@ -17,7 +17,11 @@
                 <a href="{{ route('profile') }}" class="text-gray-300 hover:text-white px-4">Profil</a>
                 <a href="{{ route('users.index') }}" class="text-gray-300 hover:text-white px-4">users</a>
                 <a href="{{ route('messages') }}" class="text-gray-300 hover:text-white px-4">messages</a>
-                <a href="{{ route('logout') }}" class="text-gray-300 hover:text-white px-4">Déconnexion</a>
+                <a href="{{ route('posts.affichage') }}" class="text-gray-300 hover:text-white px-4">posts</a>
+                <form action="{{ route('logout') }}" method="POST" style="display: inline;">
+                    @csrf
+                    <button type="submit" class="text-gray-300 hover:text-white px-4 bg-transparent border-none cursor-pointer">Déconnexion</button>
+                </form>
             </div>
         </div>
     </nav>
@@ -68,6 +72,10 @@
                         <i class="fas fa-edit"></i>
                         Modifier le profil
                     </button>
+                    <a href="{{ route('invitations.index') }}" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2">
+                        <i class="fas fa-user-plus"></i>
+                        Inviter un ami
+                    </a>
                 </div>
 
                 <!-- Informations -->
@@ -95,8 +103,8 @@
                         @foreach($friends->take(6) as $friend)
                         <div class="friend-card bg-white rounded-lg shadow-md p-4 flex flex-col items-center border border-gray-200" data-friend-id="{{ $friend->id }}">
                             <div class="relative group">
-                                <img src="{{ asset('storage/' . ($friend->friend->photo_profil ?? 'uploads/user.jpg')) }}"
-                                     alt="{{  $friend->friend->nom }}"
+                                <img src="{{ asset('storage/' . ($friend->photo_profil ?? 'uploads/user.jpg')) }}"
+                                     alt="{{  $friend->nom }}"
                                      class="w-20 h-20 rounded-full object-cover border-2 border-gray-800 shadow-md">
                                 <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
                                     <button onclick="removeFriend({{ $friend->id }})" class="text-white hover:text-red-500">
@@ -105,7 +113,7 @@
                                 </div>
                             </div>
                             <p class="mt-3 text-center text-base font-semibold text-gray-800">
-                                {{ $friend->friend->nom . " " . $friend->friend->prenom }}
+                                {{ $friend->nom . " " . $friend->prenom }}
                             </p>
                             <button onclick="messageFriend({{ $friend->id }})" class="mt-2 px-4 py-1 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600 transition">
                                 Message
@@ -136,7 +144,7 @@
                             <i class="fas fa-at text-gray-400"></i>
                         </div>
                         <input type="text" value="{{ $user->pseudo }}" placeholder="Pseudo"
-                               class="pl-10 block w-full rounded-lg bg-gray-600 border-gray-500 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500" name="pseudo">
+                        class="pl-10 block w-full rounded-lg bg-gray-600 border-gray-500 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500" name="pseudo">
                     </div>
 
                     <div class="relative">
@@ -198,7 +206,141 @@
             </div>
         </div>
     </div>
+    @if (session('success'))
+<div class="bg-green-500 text-white p-4 rounded">
+    {{ session('success') }}
+</div>
+@endif
 
+@if ($errors->any())
+<div class="bg-red-500 text-white p-4 rounded">
+    <ul>
+        @foreach ($errors->all() as $error)
+            <li>{{ $error }}</li>
+        @endforeach
+    </ul>
+</div>
+@endif
+    <div class="max-w-2xl mx-auto mt-6">
+        @if($posts->isEmpty())
+        <div class="bg-yellow-500 text-white p-4  rounded">
+            Aucune publication trouvée.
+        </div>
+    @else
+        @foreach($posts as $post)
+        <div class="bg-white p-6 rounded-lg shadow-md mb-4 text-left max-w-md mx-auto dark:bg-gray-800 dark:text-gray-200"> <!-- Changed text-center to text-left -->
+            <div class="flex items-center justify-between ">
+            <div class="flex items-center justify-start mb-3">
+                <img src="{{ asset('storage/' . ($post->user->photo_profil ?? 'uploads/user.jpg')) }}" alt="{{ $post->user->nom }}" class="rounded-full w-8 h-8">
+                <div class="ml-2">
+                    <p class="font-bold text-sm dark:text-white">{{ $post->user->nom }} {{ $post->user->prenom }}</p>
+                    <p class="text-xs text-gray-500 flex items-center dark:text-gray-400">
+                       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3M16 7V3M3 10h18M4 20h16M4 4h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2z" />
+                        </svg>
+                        @if ($post->created_at->diffInDays(now()) < 7)
+                       {{ $post->created_at->diffForHumans() }}
+                        @else
+                       {{ $post->created_at->format('d/m/Y') }}
+                        @endif
+                    </p>
+                </div>
+            </div>
+            <div class="relative">
+                <button onclick="document.getElementById('menu-{{ $post->id }}').classList.toggle('hidden')"
+                    class="p-4 text-white hover:text-gray-400">
+                    ⋮
+                </button>
+                <div id="menu-{{ $post->id }}"
+                    class="absolute right-0 mt-2 w-32 bg-white shadow-lg rounded-lg hidden z-10 p-2">
+                    <!-- Close button -->
+                    <button onclick="document.getElementById('menu-{{ $post->id }}').classList.add('hidden')"
+                        class="text-gray-500 text-sm font-bold float-right">
+                        ✖
+                    </button>
+
+                    <button onclick="openEditPostModal({{ $post->id }})" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        ✏️ Modifier
+                    </button>
+                    <form action="{{ route('post.delete', ['postId' => $post->id]) }}" method="POST">
+                        @csrf
+                        @method('DELETE')
+                        <button class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-100">
+                            🗑️ Supprimer
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+
+        </div>
+
+            @if($post->image)
+            <div class="flex justify-center mt-3">
+                <img  id="post-image-{{ $post->id }}" class="w-full max-w-xs h-52 object-cover rounded-lg" src="{{ asset('storage/' . $post->image) }}" alt="Image du post">
+            </div>
+            @endif
+           <div class="flex flex-col items-start mt-3">
+                <p id="post-content-{{ $post->id }}" class="text-gray-700 text-base mb-3 dark:text-gray-300">{{ $post->contenu }}</p>
+                <div class="flex justify-start items-center gap-4 mt-3 w-full">
+                    <div class="flex items-center gap-2">
+                        <button onclick="addlikes({{ $post->id }})" class="{{ $post->user_has_liked ? 'bg-blue-600' : 'bg-gray-400' }} text-white px-3 py-1.5 rounded-lg hover:opacity-90 transition-colors dark:bg-blue-500 dark:hover:bg-blue-400">
+                            👍 {{ $post->user_has_liked ? 'Aimé' : 'J\'aime' }}
+                        </button>
+                        <span id="like-count-{{ $post->id }}" class="text-sm font-medium">{{ $post->like_count ?? 0 }}</span>
+                    </div>
+                    <button class="text-blue-600 font-medium dark:text-blue-400" onclick="document.getElementById('comment-form-{{ $post->id }}').classList.toggle('hidden')">💬 comments {{ $post->comments->count() }}</button>
+                </div>
+                <div id="comment-form-{{ $post->id }}" class="hidden mt-3 w-full">
+                    <input type="text" placeholder="Ajouter un commentaire..." class="bg-gray-100 text-gray-800 px-3 py-2 rounded-lg w-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">
+                    <button onclick="addcomment(event)" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg mt-2 w-full hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400"  data-post-id="{{ $post->id }}">Publier</button>
+                <div id="comments-list-{{ $post->id }}" class="comments-list mt-3">
+                    @foreach ($post->comments as $comment)
+                   <div class="comment p-3 mb-3 border rounded-lg shadow-sm w-full dark:bg-gray-700 dark:text-gray-200">
+                       <div class="flex items-start justify-start">
+                           <img src="{{ asset('storage/' . ($comment->user->photo_profil ?? 'uploads/user.jpg')) }}" alt="User  Profile" class="rounded-full" width="40" height="40">
+
+                           <div class="ml-3 w-full">
+                               <div class="flex items-center">
+                               <p class="m-0 font-bold inline-block">{{ $comment->user->nom ?? 'Unknown' }}</p>
+                               <span class="text-gray-500 ml-2 text-sm dark:text-gray-400">{{ $comment->created_at->diffForHumans() }}</span> <!-- Display Created At -->
+                               </div>
+                               <p>{{ $comment->contenu }}</p>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+                </div>
+                </div>
+            </div>
+        </div>
+    @endforeach
+
+<!-- Modal for editing post -->
+<div id="editPostModal" class="fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-50">
+    <div class="bg-white w-96 p-6 rounded-lg shadow-lg relative dark:bg-gray-800 dark:text-gray-200">
+        <button onclick="closeEditPostModal()" class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl dark:text-gray-300">✖</button>
+        <h2 class="text-xl font-bold mb-3 text-center dark:text-white">Modifier le post</h2>
+        <form id="editPostForm" method="POST" action="{{ route('post.edit', ['postId' => $post->id]) }}" enctype="multipart/form-data">
+            @csrf
+            <textarea id="editPostContent" name="contenu" placeholder="Exprimez-vous..." class="w-full h-20 p-2 border rounded-lg resize-none overflow-auto focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"></textarea>
+            <div id="currentImagePreview" class="mt-3"></div>
+
+            <div class="flex mt-3 space-x-2">
+                <label class="flex-1 flex items-center justify-center cursor-pointer border border-gray-300 rounded-lg p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:border-gray-600 dark:hover:bg-gray-700">
+                    📷 Changer l'image
+                    <input type="file" id="editImageInput" name="image" accept="image/*" class="hidden" onchange="previewEditImage(event)">
+                </label>
+            </div>
+            <input type="hidden" id="deleteImageFlag" name="delete_image" value="0">
+            <button type="submit" class="bg-blue-600 text-white w-full mt-4 py-2 rounded-lg shadow-md hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400">Enregistrer</button>
+        </form>
+    </div>
+</div>
+</div>
+@endif
+
+    </div>
     <script>
         function showFriends() {
             fetch("{{ route('friends.index') }}")
@@ -221,28 +363,34 @@
                 document.getElementById('friendsModal').classList.remove('hidden');
             });
         }
-
-        function openEditModal() {
-            document.getElementById('editModal').classList.remove('hidden');
-        }
-
-        function closeEditModal() {
-            document.getElementById('editModal').classList.add('hidden');
-        }
-
-        function openFriendsModal() {
-            showFriends(); // Load friends when opening the modal
-            document.getElementById('friendsModal').classList.remove('hidden');
-        }
-
-        function closeFriendsModal() {
-            document.getElementById('friendsModal').classList.add('hidden');
-        }
-
-        function removeFriend(friendId) {
-            // Implement the logic to remove a friend
-            console.log(`Remove friend with ID: ${friendId}`);
-        }
-    </script>
+function openEditPostModal(postId) {
+    const modal = document.getElementById('editPostModal');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    const postContent = document.getElementById(`post-content-${postId}`).innerText;
+    const postImage = document.getElementById(`post-image-${postId}`).src;
+    document.getElementById('editPostContent').value = postContent;
+    document.getElementById('currentImagePreview').innerHTML = `
+        <img src="${postImage}" alt="Current Image" class="w-full max-w-xs h-52 object-cover rounded-lg mt-2">
+    `;
+    const form = document.getElementById('editPostForm');
+    // Set the action to include /edit
+    form.action = `/posts/${postId}/edit`;
+}
+function closeEditPostModal() {
+    const modal = document.getElementById('editPostModal');
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+}
+function previewEditImage(event) {
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const imagePreview = document.getElementById('currentImagePreview');
+        imagePreview.innerHTML = `<img src="${e.target.result}" alt="New Image" class="w-full max-w-xs h-52 object-cover rounded-lg mt-2">`;
+    };
+    reader.readAsDataURL(file);
+}
+</script>
 </body>
 </html>

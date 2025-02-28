@@ -15,8 +15,8 @@ class UserController extends Controller
         $users = User::where('id', '!=', Auth::id())
             ->when($search, function ($query, $search) {
                 return $query->where('nom', 'like', "%{$search}%")
-                             ->orWhere('prenom', 'like', "%{$search}%")
-                             ->orWhere('pseudo', 'like', "%{$search}%");
+                ->orWhere('prenom', 'like', "%{$search}%")
+                ->orWhere('pseudo', 'like', "%{$search}%");
             })
             ->orderBy($sort, 'asc')
             ->paginate(9);
